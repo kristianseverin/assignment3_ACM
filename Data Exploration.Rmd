@@ -1,0 +1,55 @@
+---
+title: "Data Exploration"
+author: "Kristian Severin"
+date: "2023-04-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# load packages
+pacman::p_load(
+  tidyverse,
+  brms,
+  cmdstanr,
+  patchwork
+)
+
+# load function from source
+source("SimpleBayes_f.R")
+source("SimpleBayes_MultiSource_f.R")
+```
+
+```{r}
+# load data
+df_b_cov <- read_csv("/Users/kristian/Documents/Skole/8. Semester/Advanced Computational Modelling/assignment3_ACM/Data/cogsci_clean.csv")
+df_a_cov <- read_csv("/Users/kristian/Documents/Skole/8. Semester/Advanced Computational Modelling/assignment3_ACM/Data/sc_df_clean.csv")
+df_skiz_con <- read_csv("/Users/kristian/Documents/Skole/8. Semester/Advanced Computational Modelling/assignment3_ACM/Data/Simonsen_clean.csv")
+
+```
+
+```{r}
+# make column to distinuguish between patients and controls
+df_skiz_con$diagnosis <- ifelse(df_skiz_con$ID > 200, "patients", "controls")  # there are no ID's < 200 hmm
+```
+
+
+
+```{r}
+# Density plots with semi-transparent fill
+ggplot(df_b_cov, aes(x=FirstRating)) + geom_density(alpha=.3)
+ggplot(df_b_cov, aes(x=SecondRating)) + geom_density(alpha=.3)
+
+
+
+```
+
+```{r}
+
+```
+
+
+
