@@ -8,7 +8,6 @@ date: "2023-04-20"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Simple Bayes
 ```{r}
 pacman::p_load(
   tidyverse,
@@ -22,7 +21,14 @@ pacman::p_load(
 # simple bayes function 
 SimpleBayes_f <- function(bias, Source1, Source2){
   
-  outcome <- inv_logit_scaled(bias + logit_scaled(Source1) + logit_scaled(Source2))
+  outcome <- inv_logit_scaled(bias + 0.5*logit_scaled(Source1) + 0.5*logit_scaled(Source2))
+  
+  return(outcome)
+  
+}
+WeightedBayes_f <- function(bias, Source1, Source2, w1, w2){
+  
+  outcome <- inv_logit_scaled(bias + w1*logit_scaled(Source1) + w2*logit_scaled(Source2))
   
   return(outcome)
   
@@ -77,9 +83,62 @@ for (i in 1:ntrials){
 }
 
 
-temp <- tibble(trial = seq(ntrials), bias, choice1, choice2, Source1, Source2, 
+s_df <- tibble(trial = seq(ntrials), bias, choice1, choice2, Source1, Source2, 
                feedback, diff_t, temp_c)
 
 
 ```
+
+
+```{r}
+# setup
+ntrials <- 100
+bias <- 0
+w1 <- 0.8
+w2 <- 0.8
+rating <- c(1,2,3,4,5,6,7,8)
+diff <- c(-3, -2, 0, 2, 3)
+
+# saving info
+Source1 <- array(NA, ntrials)
+Source2 <- array(NA, ntrials)
+diff_t <- array(NA, ntrials)
+feedback <- array(NA, ntrials)
+choice1 <- array(NA, ntrials)
+choice2 <- array(NA, ntrials)
+temp_c <- array(NA, ntrials)
+
+for (i in 1:ntrials){
+  # make first choice
+  choice1[i] <- sample(rating, 1, replace=TRUE)
+  # make it 0-1 scale
+  Source1[i] <- choice1[i]/9
+  
+  # generate other choice
+  feedback[i] <- 0
+  while (feedback[i] < 1 | feedback[i] > 8){
+    diff_t[i] <- sample(diff, 1, replace=TRUE)
+    
+    feedback[i] <- choice1[i] + diff_t[i]
+    }
+ 
+  # scale it
+  Source2[i] <- feedback[i]/9
+  
+  # choice 2
+  temp_c[i] <- WeightedBayes_f(bias, Source1[i], Source2[i], w1, w2)
+  
+  # make sure it's inside bounds 
+  choice2[i] <- ifelse(round(temp_c[i]*9,0) < 1, 1, 
+                     ifelse(round(temp_c[i]*9,0) > 8, 8, 
+                            round(temp_c[i]*9,0)))
+
+}
+
+w_df <- tibble(trial = seq(ntrials), bias, w1, w2, choice1, choice2, Source1, Source2, 
+               feedback, diff_t, temp_c)
+
+
+```
+
 
