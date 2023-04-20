@@ -1,0 +1,41 @@
+---
+title: "simulate"
+author: "Kristian Severin"
+date: "2023-04-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+# load packages
+pacman::p_load(
+  tidyverse,
+  brms,
+  cmdstanr,
+  patchwork
+)
+
+# load function from source
+source("SimpleBayes_f.R")
+source("SimpleBayes_MultiSource_f.R")
+```
+
+```{r}
+# source 1
+S1 <- sample(seq(1,8,1),1)/9
+
+S2_choices <- c(-3, -2, 0, 2, 3)
+
+
+
+```
+
+
+
+
+
+
