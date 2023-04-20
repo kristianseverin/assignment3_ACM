@@ -31,6 +31,7 @@ SimpleBayes_f <- function(bias, Source1, Source2){
 
 
 ```{r}
+#hej
 # setting up experimental loop
 ntrials <- 100
 bias <- 0
