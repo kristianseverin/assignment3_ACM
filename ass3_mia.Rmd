@@ -19,6 +19,7 @@ pacman::p_load(
 ```
 
 ```{r}
+# simple bayes function 
 SimpleBayes_f <- function(bias, Source1, Source2){
   
   outcome <- inv_logit_scaled(bias + logit_scaled(Source1) + logit_scaled(Source2))
@@ -26,101 +27,17 @@ SimpleBayes_f <- function(bias, Source1, Source2){
   return(outcome)
   
 }
-
-SimpleBayes_MultiSource_f <- function(bias, sources) {
-
-  outcome <- inv_logit_scaled(bias + sum(logit_scaled(sources)))
-  
-  return(outcome)
-}
 ```
 
-```{r}
-
-bias <- 0
-trials <- seq(10)
-Source1 <- seq(0.1,0.9, 0.1)
-Source2 <- seq(0.1,0.9, 0.1)
-
-db <- expand.grid(bias = bias, trials = trials, Source1 = Source1, Source2 = Source2)
-
-for (n in seq(nrow(db))) {
-  db$belief[n] <- SimpleBayes_f(db$bias[n], db$Source1[n], db$Source2[n])
-  db$choice[n] <- rbinom(1,1, db$belief[n])
-  db$continuous[n] <- db$belief[n]*9
-  db$discrete[n] <- round(db$belief[n]*9,0)
-}
-
-```
 
 ```{r}
-rating <- c(1,2,3,4,5,6,7,8)
-choice <- sample(rating, 1, replace=TRUE)
-choice2 <- choice - 4.5
-
-l_choice <- inv_logit_scaled(choice2)
-l_choice
-```
-
-```{r}
-choice3 <-  logit_scaled(l_choice)
-choice3 + 4.5
-```
-```{r}
-rating <- c(1,2,3,4,5,6,7,8)
-diff <- c(-3, -2, 0, 2, 3)
-
-choice <- sample(rating, 1, replace=TRUE)
-Source1 <- choice/9
-Source1
-
-feedback <- 0
-while (feedback < 1 | feedback > 8){
-  diff_choice <- sample(diff, 1, replace=TRUE)
-  feedback <- choice + diff_choice
-}
-
-Source2 <- feedback/9
-Source2
-
-test <- inv_logit_scaled(logit_scaled(Source1) + logit_scaled(Source2))
-
-test
-
-(logit_scaled(test))
-```
-```{r}
-
-# how to go from ratings to simple bayes framework
-rating <- c(1,2,3,4,5,6,7,8)
-diff <- c(-3, -2, 0, 2, 3)
-
-choice <- sample(rating, 1, replace=TRUE)
-Source1 <- choice/9
-Source1
-
-feedback <- 0
-while (feedback < 1 | feedback > 8){
-  diff_choice <- sample(diff, 1, replace=TRUE)
-  feedback <- choice + diff_choice
-}
-
-Source2 <- feedback/9
-Source2
-
-test <- SimpleBayes_f(0, Source1, Source2)
-
-test2 <- ifelse(round(test*9,0) < 1, 1, ifelse(round(test*9,0) > 8, 8, round(test*9,0)))
-test2
-```
-
-```{r}
-
-ntrials <- 10
+# setting up experimental loop
+ntrials <- 100
 bias <- 0
 rating <- c(1,2,3,4,5,6,7,8)
 diff <- c(-3, -2, 0, 2, 3)
 
+# saving info
 Source1 <- array(NA, ntrials)
 Source2 <- array(NA, ntrials)
 diff_t <- array(NA, ntrials)
@@ -130,27 +47,34 @@ choice2 <- array(NA, ntrials)
 temp_c <- array(NA, ntrials)
 
 for (i in 1:ntrials){
-  print(i)
+  # create random choice
   choice1[i] <- sample(rating, 1, replace=TRUE)
+  # make it on 0-1 space 
   Source1[i] <- choice1[i]/9
   
+  # create feedback information
   feedback[i] <- 0
-  while (feedback[i] < 1 | feedback[i] > 8){
-    print(feedback[i])
+  while (feedback[i] < 1 | feedback[i] > 8){ # while other choice out of scope
+    # sample a difference from choice1
     diff_t[i] <- sample(diff, 1, replace=TRUE)
     
+    # make the other choice
     feedback[i] <- choice1[i] + diff_t[i]
     }
- 
+  
+  # get that to 0-1 space
   Source2[i] <- feedback[i]/9
   
+  # get the choice2
   temp_c[i] <- SimpleBayes_f(bias, Source1[i], Source2[i])
   
+  # fixing the thing with the out of bounds choices
   choice2[i] <- ifelse(round(temp_c[i]*9,0) < 1, 1, 
                      ifelse(round(temp_c[i]*9,0) > 8, 8, 
                             round(temp_c[i]*9,0)))
 
 }
+
 
 temp <- tibble(trial = seq(ntrials), bias, choice1, choice2, Source1, Source2, 
                feedback, diff_t, temp_c)
