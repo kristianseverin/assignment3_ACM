@@ -92,7 +92,68 @@ test
 ```{r}
 
 # how to go from ratings to simple bayes framework
+rating <- c(1,2,3,4,5,6,7,8)
+diff <- c(-3, -2, 0, 2, 3)
 
+choice <- sample(rating, 1, replace=TRUE)
+Source1 <- choice/9
+Source1
+
+feedback <- 0
+while (feedback < 1 | feedback > 8){
+  diff_choice <- sample(diff, 1, replace=TRUE)
+  feedback <- choice + diff_choice
+}
+
+Source2 <- feedback/9
+Source2
+
+test <- SimpleBayes_f(0, Source1, Source2)
+
+test2 <- ifelse(round(test*9,0) < 1, 1, ifelse(round(test*9,0) > 8, 8, round(test*9,0)))
+test2
+```
+
+```{r}
+
+ntrials <- 10
+bias <- 0
+rating <- c(1,2,3,4,5,6,7,8)
+diff <- c(-3, -2, 0, 2, 3)
+
+Source1 <- array(NA, ntrials)
+Source2 <- array(NA, ntrials)
+diff_t <- array(NA, ntrials)
+feedback <- array(NA, ntrials)
+choice1 <- array(NA, ntrials)
+choice2 <- array(NA, ntrials)
+temp_c <- array(NA, ntrials)
+
+for (i in 1:ntrials){
+  print(i)
+  choice1[i] <- sample(rating, 1, replace=TRUE)
+  Source1[i] <- choice1[i]/9
+  
+  feedback[i] <- 0
+  while (feedback[i] < 1 | feedback[i] > 8){
+    print(feedback[i])
+    diff_t[i] <- sample(diff, 1, replace=TRUE)
+    
+    feedback[i] <- choice1[i] + diff_t[i]
+    }
+ 
+  Source2[i] <- feedback[i]/9
+  
+  temp_c[i] <- SimpleBayes_f(bias, Source1[i], Source2[i])
+  
+  choice2[i] <- ifelse(round(temp_c[i]*9,0) < 1, 1, 
+                     ifelse(round(temp_c[i]*9,0) > 8, 8, 
+                            round(temp_c[i]*9,0)))
+
+}
+
+temp <- tibble(trial = seq(ntrials), bias, choice1, choice2, Source1, Source2, 
+               feedback, diff_t, temp_c)
 
 
 ```
