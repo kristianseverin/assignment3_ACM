@@ -1,0 +1,170 @@
+---
+title: "assignment3"
+output: html_document
+date: "2023-04-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+pacman::p_load(
+  tidyverse,
+  brms,
+  cmdstanr,
+  patchwork
+)
+```
+
+```{r}
+# simple bayes function 
+SimpleBayes_f <- function(bias, Source1, Source2){
+  
+  outcome <- inv_logit_scaled(bias + 0.5*logit_scaled(Source1) + 0.5*logit_scaled(Source2))
+  
+  return(outcome)
+  
+}
+WeightedBayes_f <- function(bias, Source1, Source2, w1, w2){
+  
+  outcome <- inv_logit_scaled(bias + w1*logit_scaled(Source1) + w2*logit_scaled(Source2))
+  
+  return(outcome)
+  
+}
+```
+
+
+```{r}
+# setting up experimental loop
+ntrials <- 100
+bias <- 0
+rating <- c(1,2,3,4,5,6,7,8)
+diff <- c(-3, -2, 0, 2, 3)
+
+# saving info
+Source1 <- array(NA, ntrials)
+Source2 <- array(NA, ntrials)
+diff_t <- array(NA, ntrials)
+feedback <- array(NA, ntrials)
+choice1 <- array(NA, ntrials)
+choice2 <- array(NA, ntrials)
+temp_c <- array(NA, ntrials)
+
+for (i in 1:ntrials){
+  # create random choice
+  choice1[i] <- sample(rating, 1, replace=TRUE)
+  # make it on 0-1 space 
+  Source1[i] <- choice1[i]/9
+  
+  # create feedback information
+  feedback[i] <- 0
+  while (feedback[i] < 1 | feedback[i] > 8){ # while other choice out of scope
+    # sample a difference from choice1
+    diff_t[i] <- sample(diff, 1, replace=TRUE)
+    
+    # make the other choice
+    feedback[i] <- choice1[i] + diff_t[i]
+    }
+  
+  # get that to 0-1 space
+  Source2[i] <- feedback[i]/9
+  
+  # get the choice2
+  temp_c[i] <- SimpleBayes_f(bias, Source1[i], Source2[i])
+  
+  # fixing the thing with the out of bounds choices
+  choice2[i] <- ifelse(round(temp_c[i]*9,0) < 1, 1, 
+                     ifelse(round(temp_c[i]*9,0) > 8, 8, 
+                            round(temp_c[i]*9,0)))
+
+}
+
+
+s_df <- tibble(trial = seq(ntrials), bias, choice1, choice2, Source1, Source2, 
+               feedback, diff_t, temp_c)
+
+
+```
+
+
+```{r}
+# setup
+ntrials <- 100
+bias <- 0
+w1 <- 0.8
+w2 <- 0.8
+rating <- c(1,2,3,4,5,6,7,8)
+diff <- c(-3, -2, 0, 2, 3)
+
+# saving info
+Source1 <- array(NA, ntrials)
+Source2 <- array(NA, ntrials)
+diff_t <- array(NA, ntrials)
+feedback <- array(NA, ntrials)
+choice1 <- array(NA, ntrials)
+choice2 <- array(NA, ntrials)
+temp_c <- array(NA, ntrials)
+
+for (i in 1:ntrials){
+  # make first choice
+  choice1[i] <- sample(rating, 1, replace=TRUE)
+  # make it 0-1 scale
+  Source1[i] <- choice1[i]/9
+  
+  # generate other choice
+  feedback[i] <- 0
+  while (feedback[i] < 1 | feedback[i] > 8){
+    diff_t[i] <- sample(diff, 1, replace=TRUE)
+    
+    feedback[i] <- choice1[i] + diff_t[i]
+    }
+ 
+  # scale it
+  Source2[i] <- feedback[i]/9
+  
+  # choice 2
+  temp_c[i] <- WeightedBayes_f(bias, Source1[i], Source2[i], w1, w2)
+  
+  # make sure it's inside bounds 
+  choice2[i] <- ifelse(round(temp_c[i]*9,0) < 1, 1, 
+                     ifelse(round(temp_c[i]*9,0) > 8, 8, 
+                            round(temp_c[i]*9,0)))
+
+}
+
+w_df <- tibble(trial = seq(ntrials), bias, w1, w2, choice1, choice2, Source1, Source2, 
+               feedback, diff_t, temp_c)
+
+
+```
+
+```{r}
+# prepare data for stan
+data_simpleBayes <- list(
+  N = nrow(s_df),
+  rating = s_df$choice1,
+  Source1 = s_df$Source1,
+  Source2 = s_df$Source2
+)
+
+# feed R the stan model
+file <- file.path("simplebayes.stan")
+mod_simpleBayes <- cmdstan_model(file, cpp_options = list(stan_threads = TRUE),
+                     stanc_options = list("O1"))
+
+samples_simple <- mod_simpleBayes$sample(
+  data = data_simpleBayes,
+  #fixed_param = TRUE,
+  seed = 123,
+  chains = 2,
+  parallel_chains = 2,
+  threads_per_chain = 2,
+  iter_warmup = 1500,
+  iter_sampling = 3000,
+  refresh = 500
+)
+```
+
+
