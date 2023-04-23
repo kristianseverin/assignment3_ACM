@@ -165,6 +165,26 @@ samples_simple <- mod_simpleBayes$sample(
   iter_sampling = 3000,
   refresh = 500
 )
+
+# basic evaluation
+samples_simple$cmdstan_diagnose()
 ```
 
 
+```{r}
+# diagnostics
+samples_simple$summary()
+samples_simple$loo()
+
+draws_df <- as_draws_df(samples_simple$draws())
+
+ggplot(draws_df, aes(.iteration, bias, group = .chain, color = .chain)) +
+  geom_line(alpha = 0.5) +
+  theme_classic()
+
+ggplot(draws_df) +
+  geom_density(aes(bias), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(bias_prior), alpha = 0.6, fill = "pink") +
+  geom_vline(xintercept = s_df$bias[1]) +
+  theme_bw()
+```
