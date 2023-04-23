@@ -15,24 +15,8 @@ pacman::p_load(
   cmdstanr,
   patchwork
 )
-```
-
-```{r}
-# simple bayes function 
-SimpleBayes_f <- function(bias, Source1, Source2){
-  
-  outcome <- inv_logit_scaled(bias + 0.5*logit_scaled(Source1) + 0.5*logit_scaled(Source2))
-  
-  return(outcome)
-  
-}
-WeightedBayes_f <- function(bias, Source1, Source2, w1, w2){
-  
-  outcome <- inv_logit_scaled(bias + w1*logit_scaled(Source1) + w2*logit_scaled(Source2))
-  
-  return(outcome)
-  
-}
+source("SimpleBayes_f.R")
+source("WeightedBayes_f")
 ```
 
 
