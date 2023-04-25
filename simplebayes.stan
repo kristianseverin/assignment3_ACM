@@ -27,8 +27,8 @@ parameters {
 // 'y' to be normally distributed with mean 'mu'
 // and standard deviation 'sigma'.
 model {
-  target +=  inv_logit(normal_lpdf(bias | 0, 1));
-  target +=  normal_lpdf(rating | bias + to_vector(l_Source1) + to_vector(l_Source2), 3.5);
+  target +=  normal_lpdf(bias | 0, 1);
+  target +=  inv_logit(normal_lpdf(rating | bias + to_vector(l_Source1) + to_vector(l_Source2), 1));
 }
 
 generated quantities{
@@ -38,7 +38,7 @@ generated quantities{
   bias_prior = normal_rng(0, 3.5);
   
   for (n in 1:N){  
-    log_lik[n] = inv_logit(normal_lpdf(rating[n] | bias + l_Source1[n] +  l_Source2[n], 3.5));
+    log_lik[n] = inv_logit(normal_lpdf(rating[n] | bias + l_Source1[n] +  l_Source2[n], 1));
   }
   
 }
