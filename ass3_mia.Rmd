@@ -6,6 +6,7 @@ date: "2023-04-20"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+path_to_stan_installation = "C:/Users/kathr/OneDrive - Danmarks Tekniske Universitet/.cmdstan/cmdstan-2.31.0"
 ```
 
 ```{r}
@@ -15,6 +16,8 @@ pacman::p_load(
   cmdstanr,
   patchwork
 )
+
+set_cmdstan_path(path_to_stan_installation)
 ```
 
 ```{r}
@@ -140,4 +143,59 @@ w_df <- tibble(trial = seq(ntrials), bias, w1, w2, choice1, choice2, Source1, So
 
 ```
 
+
+```{r}
+
+file <- file.path("weighted_bayes.stan")
+mod_wb <- cmdstan_model(file, cpp_options = list(stan_threads = TRUE),
+                     stanc_options = list("O1"))
+
+```
+```{r}
+data_weightedBayes <- list(
+  N = nrow(w_df),
+  choice = w_df$choice1,
+  Source1 = w_df$Source1,
+  Source2 = w_df$Source2
+)
+
+samples_weighted <- mod_wb$sample(
+  data = data_weightedBayes,
+  seed = 123,
+  chains = 2,
+  parallel_chains = 2,
+  threads_per_chain = 2,
+  iter_warmup = 1500,
+  iter_sampling = 3000,
+  refresh = 500
+)
+
+
+```
+
+# basic evaluation
+```{r}
+samples_weighted$cmdstan_diagnose()
+```
+
+
+```{r}
+# diagnostics
+samples_weighted$summary()
+samples_weighted$loo()
+draws_df <- as_draws_df(samples_weighted$draws())
+ggplot(draws_df, aes(.iteration, bias, group = .chain, color = .chain)) +
+  geom_line(alpha = 0.5) +
+  theme_classic()
+ggplot(draws_df) +
+  geom_density(aes(bias), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(bias_prior), alpha = 0.6, fill = "pink") +
+  geom_vline(xintercept = s_df$bias[1]) +
+  theme_bw()
+ggplot(draws_df) +
+  geom_density(aes(w1), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(w1_prior), alpha = 0.6, fill = "pink") +
+  theme_bw()
+
+```
 
