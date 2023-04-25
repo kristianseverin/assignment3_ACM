@@ -154,7 +154,7 @@ mod_wb <- cmdstan_model(file, cpp_options = list(stan_threads = TRUE),
 ```{r}
 data_weightedBayes <- list(
   N = nrow(w_df),
-  choice = w_df$choice1,
+  choice = w_df$choice2,
   Source1 = w_df$Source1,
   Source2 = w_df$Source2
 )
@@ -195,6 +195,10 @@ ggplot(draws_df) +
 ggplot(draws_df) +
   geom_density(aes(w1), alpha = 0.6, fill = "lightblue") +
   geom_density(aes(w1_prior), alpha = 0.6, fill = "pink") +
+  theme_bw()
+ggplot(draws_df) +
+  geom_density(aes(w2), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(w2_prior), alpha = 0.6, fill = "pink") +
   theme_bw()
 
 ```
