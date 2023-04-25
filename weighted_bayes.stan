@@ -32,7 +32,7 @@ model {
   target += beta_lpdf(weight1 | 1, 1);
   target += beta_lpdf(weight2 | 1, 1);
   for (n in 1:N)
-    target += bernoulli_logit_lpmf(choice[n] | bias + weight1 *l_Source1[n] + weight2 * l_Source2[n]);
+    target += inv_logit(normal_lpdf(choice[n] | bias + weight1 *l_Source1[n] + weight2 * l_Source2[n],1));
 }
 
 generated quantities{
@@ -44,6 +44,6 @@ generated quantities{
   w1_prior = 0.5 + inv_logit(normal_rng(0, 1))/2 ;
   w2_prior = 0.5 + inv_logit(normal_rng(0, 1))/2 ;
   for (n in 1:N)
-    log_lik[n]= bernoulli_logit_lpmf(choice[n] | bias + weight1 * l_Source1[n] + weight2 * l_Source2[n]);
+    log_lik[n] = inv_logit(normal_lpdf(choice[n] | bias + weight1 * l_Source1[n] + weight2 * l_Source2[n],1));
 }
 
