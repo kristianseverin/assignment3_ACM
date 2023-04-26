@@ -6,7 +6,6 @@ date: "2023-04-20"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-path_to_stan_installation = "C:/Users/kathr/OneDrive - Danmarks Tekniske Universitet/.cmdstan/cmdstan-2.31.0"
 ```
 
 ```{r}
@@ -17,30 +16,13 @@ pacman::p_load(
   patchwork
 )
 
-set_cmdstan_path(path_to_stan_installation)
-```
-
-```{r}
-# simple bayes function 
-SimpleBayes_f <- function(bias, Source1, Source2){
-  
-  outcome <- inv_logit_scaled(bias + 0.5*logit_scaled(Source1) + 0.5*logit_scaled(Source2))
-  
-  return(outcome)
-  
-}
-WeightedBayes_f <- function(bias, Source1, Source2, w1, w2){
-  
-  outcome <- inv_logit_scaled(bias + w1*logit_scaled(Source1) + w2*logit_scaled(Source2))
-  
-  return(outcome)
-  
-}
+source("SimpleBayes_f.R")
+source("WeightedBayes_f.R")
 ```
 
 
 ```{r}
-# setting up experimental loop
+# setting up experimental loop - simple bayes
 ntrials <- 100
 bias <- 0
 rating <- c(1,2,3,4,5,6,7,8)
@@ -56,25 +38,25 @@ choice2 <- array(NA, ntrials)
 temp_c <- array(NA, ntrials)
 
 for (i in 1:ntrials){
-  # create random choice
+  # create random first choice
   choice1[i] <- sample(rating, 1, replace=TRUE)
   # make it on 0-1 space 
   Source1[i] <- choice1[i]/9
   
-  # create feedback information
+  # create feedback information, i.e., group rating
   feedback[i] <- 0
-  while (feedback[i] < 1 | feedback[i] > 8){ # while other choice out of scope
+  while (feedback[i] < 1 | feedback[i] > 8){ # while group rating out of scope
     # sample a difference from choice1
     diff_t[i] <- sample(diff, 1, replace=TRUE)
     
-    # make the other choice
+    # make the other choice / group rating
     feedback[i] <- choice1[i] + diff_t[i]
     }
   
-  # get that to 0-1 space
+  # get group rating to 0-1 space
   Source2[i] <- feedback[i]/9
   
-  # get the choice2
+  # get the second choice 
   temp_c[i] <- SimpleBayes_f(bias, Source1[i], Source2[i])
   
   # fixing the thing with the out of bounds choices
@@ -93,7 +75,7 @@ s_df <- tibble(trial = seq(ntrials), bias, choice1, choice2, Source1, Source2,
 
 
 ```{r}
-# setup
+# setup for weighted bayes
 ntrials <- 100
 bias <- 0
 w1 <- 0.8
@@ -143,24 +125,23 @@ w_df <- tibble(trial = seq(ntrials), bias, w1, w2, choice1, choice2, Source1, So
 
 ```
 
-
 ```{r}
-
-file <- file.path("weighted_bayes.stan")
-mod_wb <- cmdstan_model(file, cpp_options = list(stan_threads = TRUE),
-                     stanc_options = list("O1"))
-
-```
-```{r}
-data_weightedBayes <- list(
-  N = nrow(w_df),
-  choice = w_df$choice2,
-  Source1 = w_df$Source1,
-  Source2 = w_df$Source2
+# prepare data for stan - simple bayes
+data_simpleBayes <- list(
+  N = nrow(s_df),
+  rating = s_df$choice2, # the outcome of combining choice1 and group rating
+  Source1 = s_df$Source1, # own rating on 0-1 space
+  Source2 = s_df$Source2 # group raing on 0-1 space
 )
 
-samples_weighted <- mod_wb$sample(
-  data = data_weightedBayes,
+# feed R the stan model
+file <- file.path("simplebayes.stan")
+mod_simpleBayes <- cmdstan_model(file, cpp_options = list(stan_threads = TRUE),
+                     stanc_options = list("O1"))
+
+samples_simple <- mod_simpleBayes$sample(
+  data = data_simpleBayes,
+  #fixed_param = TRUE,
   seed = 123,
   chains = 2,
   parallel_chains = 2,
@@ -170,36 +151,207 @@ samples_weighted <- mod_wb$sample(
   refresh = 500
 )
 
-
-```
-
 # basic evaluation
-```{r}
-samples_weighted$cmdstan_diagnose()
+samples_simple$cmdstan_diagnose()
 ```
-
 
 ```{r}
 # diagnostics
-samples_weighted$summary()
-samples_weighted$loo()
-draws_df <- as_draws_df(samples_weighted$draws())
+samples_simple$summary()
+samples_simple$loo()
+
+draws_df <- as_draws_df(samples_simple$draws())
+
 ggplot(draws_df, aes(.iteration, bias, group = .chain, color = .chain)) +
   geom_line(alpha = 0.5) +
   theme_classic()
+
 ggplot(draws_df) +
   geom_density(aes(bias), alpha = 0.6, fill = "lightblue") +
   geom_density(aes(bias_prior), alpha = 0.6, fill = "pink") +
   geom_vline(xintercept = s_df$bias[1]) +
   theme_bw()
+```
+```{r}
+# prepare data for stan - weighted bayes
+data_weightedBayes <- list(
+  N = nrow(w_df),
+  choice = w_df$choice2, # the outcome of combining choice1 and group rating
+  Source1 = w_df$Source1, # own rating on 0-1 space
+  Source2 = w_df$Source2 # group raing on 0-1 space
+)
+
+# feed R the stan model
+file <- file.path("weighted_bayes.stan")
+mod_weightedBayes <- cmdstan_model(file, cpp_options = list(stan_threads = TRUE),
+                     stanc_options = list("O1"))
+
+samples_weight <- mod_weightedBayes$sample(
+  data = data_weightedBayes,
+  #fixed_param = TRUE,
+  seed = 123,
+  chains = 2,
+  parallel_chains = 2,
+  threads_per_chain = 2,
+  iter_warmup = 1500,
+  iter_sampling = 3000,
+  refresh = 500
+)
+
+# basic evaluation
+samples_weight$cmdstan_diagnose()
+```
+```{r}
+# diagnostics
+samples_weight$summary()
+samples_weight$loo()
+
+draws_df <- as_draws_df(samples_weight$draws())
+
+ggplot(draws_df, aes(.iteration, bias, group = .chain, color = .chain)) +
+  geom_line(alpha = 0.5) +
+  theme_classic()
+
+ggplot(draws_df) +
+  geom_density(aes(bias), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(bias_prior), alpha = 0.6, fill = "pink") +
+  geom_vline(xintercept = w_df$bias[1]) +
+  theme_bw()
+
 ggplot(draws_df) +
   geom_density(aes(w1), alpha = 0.6, fill = "lightblue") +
   geom_density(aes(w1_prior), alpha = 0.6, fill = "pink") +
+  geom_vline(xintercept = w_df$w1[1]) +
   theme_bw()
+
 ggplot(draws_df) +
   geom_density(aes(w2), alpha = 0.6, fill = "lightblue") +
   geom_density(aes(w2_prior), alpha = 0.6, fill = "pink") +
+  geom_vline(xintercept = w_df$w2[1]) +
+  theme_bw()
+```
+
+
+```{r}
+# loading empirical data
+
+data_path <- "Data/cogsci_clean.csv"
+
+df_cs <- read_csv(data_path)
+
+```
+
+```{r}
+# setting it up for stan and fitting simple bayes
+df_cs <- df_cs %>% 
+  filter(ID == 1, GroupRating != 0) %>% # remove conditions without group ratings
+  mutate(Source1 = FirstRating/9, # make sources on 0-1 space
+         Source2 = GroupRating/9)
+
+
+data_simpleBayes <- list(
+  N = nrow(df_cs),
+  rating = df_cs$SecondRating, # outcome of combining both information sources
+  Source1 = df_cs$Source1,
+  Source2 = df_cs$Source2
+)
+
+# feed R the stan model
+file <- file.path("simplebayes.stan")
+mod_simpleBayes <- cmdstan_model(file, cpp_options = list(stan_threads = TRUE),
+                     stanc_options = list("O1"))
+
+samples_cs <- mod_simpleBayes$sample(
+  data = data_simpleBayes,
+  #fixed_param = TRUE,
+  seed = 123,
+  chains = 2,
+  parallel_chains = 2,
+  threads_per_chain = 2,
+  iter_warmup = 1500,
+  iter_sampling = 3000,
+  refresh = 500
+)
+
+# basic evaluation
+samples_cs$cmdstan_diagnose()
+```
+
+```{r}
+# diagnostics
+samples_simple$summary()
+samples_simple$loo()
+
+draws_df <- as_draws_df(samples_simple$draws())
+
+ggplot(draws_df, aes(.iteration, bias, group = .chain, color = .chain)) +
+  geom_line(alpha = 0.5) +
+  theme_classic()
+
+ggplot(draws_df) +
+  geom_density(aes(bias), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(bias_prior), alpha = 0.6, fill = "pink") +
+  #geom_vline(xintercept = s_df$bias[1]) +
+  theme_bw()
+```
+
+```{r}
+# fitting wegihted bayes to empirical data 
+data_weightedBayes <- list(
+  N = nrow(df_cs),
+  choice = df_cs$SecondRating, # outcome of combining both information sources
+  Source1 = df_cs$Source1,
+  Source2 = df_cs$Source2
+)
+
+# feed R the stan model
+file <- file.path("weighted_bayes.stan")
+mod_weightedBayes <- cmdstan_model(file, cpp_options = list(stan_threads = TRUE),
+                     stanc_options = list("O1"))
+
+samples_weight <- mod_weightedBayes$sample(
+  data = data_weightedBayes,
+  #fixed_param = TRUE,
+  seed = 123,
+  chains = 2,
+  parallel_chains = 2,
+  threads_per_chain = 2,
+  iter_warmup = 1500,
+  iter_sampling = 3000,
+  refresh = 500
+)
+
+# basic evaluation
+samples_weight$cmdstan_diagnose()
+```
+
+```{r}
+# diagnostics
+samples_weight$summary()
+samples_weight$loo()
+
+draws_df <- as_draws_df(samples_weight$draws())
+
+ggplot(draws_df, aes(.iteration, bias, group = .chain, color = .chain)) +
+  geom_line(alpha = 0.5) +
+  theme_classic()
+
+ggplot(draws_df) +
+  geom_density(aes(bias), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(bias_prior), alpha = 0.6, fill = "pink") +
+  #geom_vline(xintercept = w_df$bias[1]) +
   theme_bw()
 
+ggplot(draws_df) +
+  geom_density(aes(w1), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(w1_prior), alpha = 0.6, fill = "pink") +
+  #geom_vline(xintercept = w_df$w1[1]) +
+  theme_bw()
+
+ggplot(draws_df) +
+  geom_density(aes(w2), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(w2_prior), alpha = 0.6, fill = "pink") +
+  #geom_vline(xintercept = w_df$w2[1]) +
+  theme_bw()
 ```
 

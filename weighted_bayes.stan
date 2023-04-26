@@ -1,14 +1,14 @@
 data {
   int<lower=0> N;
   vector[N] choice; 
-  array[N] real <lower = 0, upper = 1> Source1; # Source 1 is the rating scaled between 0.1 and 
-  array[N] real <lower = 0, upper = 1> Source2; # Source 2 is the feedback (choice1 + diff) scaled between 0.1 and 0.9
+  array[N] real <lower = 0, upper = 1> Source1; // Source 1 is the rating scaled between 0.1 and 
+  array[N] real <lower = 0, upper = 1> Source2; // Source 2 is the feedback (choice1 + diff) scaled between 0.1 and 0.9
 }
 
 transformed data {
   array[N] real l_Source1;
   array[N] real l_Source2;
-  l_Source1 = logit(Source1); #logit transformed Source 1 (to be between -inf and inf)
+  l_Source1 = logit(Source1); //logit transformed Source 1 (to be between -inf and inf)
   l_Source2 = logit(Source2);
 }
 
