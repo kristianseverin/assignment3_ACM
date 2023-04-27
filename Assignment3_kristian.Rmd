@@ -16,7 +16,7 @@ pacman::p_load(
   patchwork
 )
 source("SimpleBayes_f.R")
-source("WeightedBayes_f")
+source("WeightedBayes_f.R")
 ```
 
 
@@ -171,4 +171,82 @@ ggplot(draws_df) +
   geom_density(aes(bias_prior), alpha = 0.6, fill = "pink") +
   geom_vline(xintercept = s_df$bias[1]) +
   theme_bw()
+
+ggplot(draws_df) +
+  geom_density(aes(sd), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(sd_prior), alpha = 0.6, fill = "pink") +
+  #geom_vline(xintercept = s_df$bias[1]) +
+  theme_bw()
 ```
+-----------------------------------------------------------Fitting real data to the model---------------------------------------------------
+
+```{r}
+real_df <- read.csv("/Users/kristian/Documents/Skole/8. Semester/Advanced Computational Modelling/assignment3_ACM/Data/sc_df_clean.csv")
+# create source 1 and get it on log-odds scale
+real_df$Source1 <- real_df$FirstRating / 9  # source 1 is first rating log odds
+# create source 2 and get it on log-odds scaleS
+#real_df$Source2 <- abs(real_df$Feedback + real_df$Change)/ 9  # source 2 is absolute value of feedback + change log odds
+# source 2 is just feedback
+real_df$Source2 <- abs(real_df$Feedback) /9
+real_df <- real_df[!is.na(real_df$Source2),]  # remove na's
+real_df$Source2 <- ifelse(real_df$Source2 == 0, 0.01, real_df$Source2)
+real_df$Source2 <- ifelse(real_df$Source2 == 1, 0.99, real_df$Source2)
+```
+
+
+```{r}
+# prepare data for stan
+data_simpleBayesReal <- list(
+  N = nrow(real_df),
+  rating = real_df$FirstRating,
+  Source1 = real_df$Source1,
+  Source2 = real_df$Source2
+)
+# feed R the stan model
+file <- file.path("simplebayes.stan")
+mod_simpleBayesReal <- cmdstan_model(file, cpp_options = list(stan_threads = TRUE),
+                     stanc_options = list("O1"))
+samples_simple_real <- mod_simpleBayesReal$sample(
+  data = data_simpleBayesReal,
+  #fixed_param = TRUE,
+  seed = 123,
+  chains = 2,
+  parallel_chains = 2,
+  threads_per_chain = 2,
+  iter_warmup = 1500,
+  iter_sampling = 3000,
+  refresh = 500
+)
+# basic evaluation
+samples_simple_real$cmdstan_diagnose()
+```
+
+```{r}
+# diagnostics
+samples_simple_real$summary()
+samples_simple_real$loo()
+draws_df_real <- as_draws_df(samples_simple_real$draws())
+ggplot(draws_df_real, aes(.iteration, bias, group = .chain, color = .chain)) +
+  geom_line(alpha = 0.5) +
+  theme_classic()
+ggplot(draws_df_real) +
+  geom_density(aes(bias), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(bias_prior), alpha = 0.6, fill = "pink") +
+  #geom_vline(xintercept = s_df$bias[1]) +
+  theme_bw() + ggtitle("Bias Real Data")
+  
+ggplot(draws_df_real) +
+  geom_density(aes(sd), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(sd_prior), alpha = 0.6, fill = "pink") +
+  #geom_vline(xintercept = s_df$bias[1]) +
+  theme_bw()
+
+```
+
+
+
+
+
+
+
+
