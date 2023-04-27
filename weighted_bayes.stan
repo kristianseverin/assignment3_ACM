@@ -14,6 +14,7 @@ transformed data {
 
 parameters {
   real bias;
+  real sd;
   // meaningful weights are btw 0.5 and 1 (theory reasons)
   real<lower = 0.5, upper = 1> w1; 
   real<lower = 0.5, upper = 1> w2;
@@ -30,22 +31,25 @@ transformed parameters {
 }
 
 model {
+  target += normal_lpdf(sd | 0.3, 0.5);
   target += normal_lpdf(bias | 0, 1);
   target += beta_lpdf(weight1 | 1, 1);
   target += beta_lpdf(weight2 | 1, 1);
   for (n in 1:N)
-    target += inv_logit(normal_lpdf(l_choice[n] | bias + weight1 *l_Source1[n] + weight2 * l_Source2[n],1));
+    target += inv_logit(normal_lpdf(l_choice[n] | bias + weight1 *l_Source1[n] + weight2 * l_Source2[n],sd));
 }
 
 generated quantities{
   array[N] real log_lik;
   real bias_prior;
+  real sd_prior;
   real w1_prior;
   real w2_prior;
-  bias_prior = normal_rng(0, 1) ;
+  bias_prior = normal_rng(0.3, 0.5) ;
+  sd_prior = normal_rng(1,.5);
   w1_prior = 0.5 + inv_logit(normal_rng(0, 1))/2 ;
   w2_prior = 0.5 + inv_logit(normal_rng(0, 1))/2 ;
   for (n in 1:N)
-    log_lik[n] = inv_logit(normal_lpdf(l_choice[n] | bias + weight1 * l_Source1[n] + weight2 * l_Source2[n],1));
+    log_lik[n] = inv_logit(normal_lpdf(l_choice[n] | bias + weight1 * l_Source1[n] + weight2 * l_Source2[n],sd));
 }
 

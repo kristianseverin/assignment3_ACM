@@ -200,6 +200,11 @@ ggplot(draws_df) +
   geom_density(aes(w2), alpha = 0.6, fill = "lightblue") +
   geom_density(aes(w2_prior), alpha = 0.6, fill = "pink") +
   theme_bw()
+ggplot(draws_df) +
+  geom_density(aes(sd), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(sd_prior), alpha = 0.6, fill = "pink") +
+  theme_bw()
+
 
 ```
 
