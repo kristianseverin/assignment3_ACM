@@ -8,8 +8,10 @@ data {
 transformed data {
   array[N] real l_Source1;
   array[N] real l_Source2;
+  vector[N] l_choice;
   l_Source1 = logit(Source1); //logit transformed Source 1 (to be between -inf and inf)
   l_Source2 = logit(Source2);
+  l_choice = logit(choice/9);
 }
 
 parameters {
@@ -22,11 +24,10 @@ parameters {
 transformed parameters {
   real<lower = 0, upper = 1> weight1;
   real<lower = 0, upper = 1> weight2;
-  vector[N] l_choice;
   // weight parameters are rescaled to be on a 0-1 scale (0 -> no effects; 1 -> face value)
   weight1 = (w1 - 0.5) * 2;  
   weight2 = (w2 - 0.5) * 2;
-  l_choice = logit(choice/9);
+
 }
 
 model {

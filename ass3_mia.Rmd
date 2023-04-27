@@ -76,7 +76,7 @@ s_df <- tibble(trial = seq(ntrials), bias, choice1, choice2, Source1, Source2,
 
 ```{r}
 # setup for weighted bayes
-ntrials <- 100
+ntrials <- 1000
 bias <- 0
 w1 <- 0.8
 w2 <- 0.8
@@ -279,10 +279,10 @@ samples_cs$cmdstan_diagnose()
 
 ```{r}
 # diagnostics
-samples_simple$summary()
-samples_simple$loo()
+samples_cs$summary()
+samples_cs$loo()
 
-draws_df <- as_draws_df(samples_simple$draws())
+draws_df <- as_draws_df(samples_cs$draws())
 
 ggplot(draws_df, aes(.iteration, bias, group = .chain, color = .chain)) +
   geom_line(alpha = 0.5) +
