@@ -96,7 +96,7 @@ s_df <- tibble(trial = seq(ntrials), bias, choice1, choice2, Source1, Source2,
 # setup
 ntrials <- 100
 bias <- 0
-w1 <- 0.8
+w1 <- 0.5
 w2 <- 0.8
 rating <- c(1,2,3,4,5,6,7,8)
 diff <- c(-3, -2, 0, 2, 3)
