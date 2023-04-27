@@ -32,7 +32,7 @@ model {
   target += beta_lpdf(weight1 | 1, 1);
   target += beta_lpdf(weight2 | 1, 1);
   for (n in 1:N)
-    target += inv_logit(normal_lpdf(choice[n] | bias + weight1 *l_Source1[n] + weight2 * l_Source2[n],1));
+    target += inv_logit(normal_lpdf(choice[n] | bias + weight1 * l_Source1[n] + weight2 * l_Source2[n],1));
 }
 
 generated quantities{
