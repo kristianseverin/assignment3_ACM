@@ -24,11 +24,11 @@ parameters {
 
 model {
   target += normal_lpdf(sd | 0.3, 0.1)-normal_lccdf(0|0.3,0.1); # Avoiding negative sd's
-  target += normal_lpdf(bias | 0, 1);
+  target += normal_lpdf(bias | 0, .3);
   //target += normal_lpdf(w1 | 0.4, .1);
   //target += normal_lpdf(w2 | 0.8, .1);
-  target += normal_lpdf(w1 | 0.5, 1);
-  target += normal_lpdf(w2 | 0.5, 1);
+  target += normal_lpdf(w1 | 0.5, .2);
+  target += normal_lpdf(w2 | 0.5, .2);
   for (n in 1:N)
     target += normal_lpdf(l_choice[n] | bias + w1 *l_Source1[n] + w2 * l_Source2[n],sd);
 }
@@ -39,7 +39,7 @@ generated quantities{
   real sd_prior;
   real w1_prior;
   real w2_prior;
-  bias_prior = normal_rng(0, .1) ;
+  bias_prior = normal_rng(0, .3) ;
   sd_prior = normal_rng(0.3,.1);
   // w1_prior = normal_rng(0.4, .1);
   // w2_prior = normal_rng(0.8, .1);
