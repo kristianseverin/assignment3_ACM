@@ -1,5 +1,5 @@
 ---
-title: "simple bayes and empirical"
+title: "ass3"
 output: html_document
 date: "2023-04-20"
 ---
