@@ -171,6 +171,12 @@ ggplot(draws_df) +
   geom_density(aes(bias_prior), alpha = 0.6, fill = "pink") +
   geom_vline(xintercept = s_df$bias[1]) +
   theme_bw()
+
+ggplot(draws_df) +
+  geom_density(aes(sd), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(sd_prior), alpha = 0.6, fill = "pink") +
+  geom_vline(xintercept = s_df$bias[1]) +
+  theme_bw()
 ```
 ```{r}
 # prepare data for stan - weighted bayes
@@ -243,7 +249,7 @@ df_cs <- read_csv(data_path)
 
 ```{r}
 # fitting simple bayes to empirical data 
-for (i in seq(5)){
+for (i in seq(6)){
   df_temp <- df_cs %>% 
     filter(ID == i, GroupRating != 0) %>% 
     mutate(Source1 = FirstRating/9,
@@ -311,7 +317,7 @@ draws_df_emp %>%
 
 ```{r}
 # fitting weighted bayes to empirical data 
-for (i in seq(5)){
+for (i in seq(6)){
   df_temp <- df_cs %>% 
     filter(ID == i, GroupRating != 0) %>% 
     mutate(Source1 = FirstRating/9,

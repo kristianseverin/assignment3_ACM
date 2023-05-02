@@ -28,7 +28,7 @@ parameters {
 
 model {
   target += normal_lpdf(bias | 0, 1);
-  target += normal_lpdf(sd | 0, .5)  - normal_lccdf(0 | 0, .5);
+  target += normal_lpdf(sd | 0.3, .1)  - normal_lccdf(0.3 | 0.3, .1);
   target += normal_lpdf(l_rating | bias + 0.5*to_vector(l_Source1) + 0.5*to_vector(l_Source2), sd);
 }
 
@@ -38,7 +38,7 @@ generated quantities{
   array[N] real log_lik;
   
   bias_prior = normal_rng(0, 1);
-  sd_prior = normal_rng(1,1);
+  sd_prior = normal_rng(0.3, 0.1);
   
   for (n in 1:N){  
     log_lik[n] = normal_lpdf(l_rating[n] | bias + 0.5*l_Source1[n] +  0.5*l_Source2[n], sd);
