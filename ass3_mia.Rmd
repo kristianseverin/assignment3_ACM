@@ -162,9 +162,16 @@ samples_simple$loo()
 
 draws_df <- as_draws_df(samples_simple$draws())
 
-ggplot(draws_df, aes(.iteration, bias, group = .chain, color = .chain)) +
+b_p <- ggplot(draws_df, aes(.iteration, bias, group = .chain, color = .chain)) +
+  geom_line(alpha = 0.5) +
+  theme_classic()+
+  theme(legend.position = "none")
+
+sd_p <- ggplot(draws_df, aes(.iteration, sd, group = .chain, color = .chain)) +
   geom_line(alpha = 0.5) +
   theme_classic()
+
+b_p + sd_p
 
 ggplot(draws_df) +
   geom_density(aes(bias), alpha = 0.6, fill = "lightblue") +
@@ -175,7 +182,6 @@ ggplot(draws_df) +
 ggplot(draws_df) +
   geom_density(aes(sd), alpha = 0.6, fill = "lightblue") +
   geom_density(aes(sd_prior), alpha = 0.6, fill = "pink") +
-  geom_vline(xintercept = s_df$bias[1]) +
   theme_bw()
 ```
 ```{r}
@@ -214,9 +220,20 @@ samples_weight$loo()
 
 draws_df <- as_draws_df(samples_weight$draws())
 
-ggplot(draws_df, aes(.iteration, bias, group = .chain, color = .chain)) +
+b_p <- ggplot(draws_df, aes(.iteration, bias, group = .chain, color = .chain)) +
   geom_line(alpha = 0.5) +
   theme_classic()
+sd_p <- ggplot(draws_df, aes(.iteration, sd, group = .chain, color = .chain)) +
+  geom_line(alpha = 0.5) +
+  theme_classic()
+w1_p <- ggplot(draws_df, aes(.iteration, w1, group = .chain, color = .chain)) +
+  geom_line(alpha = 0.5) +
+  theme_classic()
+w2_p <- ggplot(draws_df, aes(.iteration, w2, group = .chain, color = .chain)) +
+  geom_line(alpha = 0.5) +
+  theme_classic()
+
+(b_p+sd_p) / (w1_p + w2_p)
 
 ggplot(draws_df) +
   geom_density(aes(bias), alpha = 0.6, fill = "lightblue") +
@@ -235,6 +252,12 @@ ggplot(draws_df) +
   geom_density(aes(w2_prior), alpha = 0.6, fill = "pink") +
   geom_vline(xintercept = w_df$w2[1]) +
   theme_bw()
+
+ggplot(draws_df) +
+  geom_density(aes(sd), alpha = 0.6, fill = "lightblue") +
+  geom_density(aes(sd_prior), alpha = 0.6, fill = "pink") +
+  geom_vline(xintercept = w_df$sd[1]) +
+  theme_bw()
 ```
 
 
@@ -249,6 +272,7 @@ df_cs <- read_csv(data_path)
 
 ```{r}
 # fitting simple bayes to empirical data 
+loo_list = c()
 for (i in seq(6)){
   df_temp <- df_cs %>% 
     filter(ID == i, GroupRating != 0) %>% 
@@ -278,6 +302,8 @@ for (i in seq(6)){
     refresh = 500
   )
   
+  loo_list = c(loo_list, samples$loo())
+  
   temp <- as_draws_df(samples$draws())
   temp <- temp %>% 
     mutate(ID = i)
@@ -290,6 +316,8 @@ for (i in seq(6)){
 ```
 
 ```{r}
+loo_list
+
 # diagnostics
 ggplot(draws_df_emp, aes(.iteration, bias, group = .chain, color = .chain)) +
   geom_line(alpha = 0.5) +
@@ -317,6 +345,8 @@ draws_df_emp %>%
 
 ```{r}
 # fitting weighted bayes to empirical data 
+loo_list = c()
+
 for (i in seq(6)){
   df_temp <- df_cs %>% 
     filter(ID == i, GroupRating != 0) %>% 
@@ -346,6 +376,8 @@ for (i in seq(6)){
     refresh = 500
   )
   
+  loo_list = c(loo_list, samples$loo())
+  
   temp <- as_draws_df(samples$draws())
   temp <- temp %>% 
     mutate(ID = i)
@@ -357,6 +389,7 @@ for (i in seq(6)){
 }
 ```
 ```{r}
+loo_list
 # diagnostics
 ggplot(draws_df_emp2, aes(.iteration, bias, group = .chain, color = .chain)) +
   geom_line(alpha = 0.5) +
